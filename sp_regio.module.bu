@@ -1,0 +1,84 @@
+<?php
+
+
+/**
+ * Implements hook_enable()
+ */
+function sp_regio_enable() {
+    db_update('system')
+    ->fields(array('weight' => 100))
+    ->condition('type', 'module')
+    ->condition('name', 'sp_regio')
+    ->execute();
+}
+
+function sp_regio_form_webform_client_form_alter(&$form, &$form_state, $form_id){
+
+  if (isset($form["submitted"]["subscription_count"])){
+//    drupal_set_message(print_r($form["submitted"]["civicrm_1_participant_1_participant_event_id"],true));
+  
+    //get logged in civi user
+    $cid = $form["submitted"]["civicrm_1_contact_1_fieldset_fieldset"]["civicrm_1_contact_1_contact_contact_id"]["#value"];
+
+    //get event
+    $eventstr = $form["submitted"]["civicrm_1_participant_1_participant_event_id"]["#value"];
+    if (!$eventstr) $eventstr = $form["submitted"]["civicrm_1_participant_1_participant_event_id"]["#webform_component"]["value"];
+    $eventid = 	explode("-",$eventstr)[0];
+ 
+
+    //get event member ratio
+    $event_ratio = 50;
+    
+    civicrm_initialize();
+    require_once 'api/api.php';
+    $params = array(
+      'version' => 3,
+      'sequential' => 1,
+      'name' => 'Verhouding_aantal_leden_aantal_inschrijvingen',
+    );
+    $result = civicrm_api('CustomField', 'get', $params);
+    $custom_field_id = $result["id"];
+
+    $params = array(
+      'version'    => 3,
+      'id' => $eventid,
+    );
+    $event = civicrm_api('Event', 'get', $params);
+    $memberratio = $event["values"][$eventid]['custom_'.$custom_field_id];
+//                   $old_event_id = $old_p['values'][$id]['event_id'];
+
+
+
+    //get region
+    $region = $form["submitted"]["civicrm_2_contact_1_fieldset_fieldset"]["civicrm_2_contact_1_contact_contact_id"]["#value"];
+
+    //get membercount
+
+    $params = array(
+     'version' => 3,
+     'sequential' => 1,
+     'name_a_b' => 'gemeente_based_ab',
+    );
+    $result = civicrm_api('RelationshipType', 'get', $params);
+    $rel_type_id = $result["id"];   
+
+    $params = array(
+     'version' => 3,
+     'sequential' => 1,
+     'relationship_type_id' => $rel_type_id,
+     'contact_id_b'=> $region,
+    );
+    $memberresult = civicrm_api('Relationship', 'getcount', $params);
+    $membercount = $memberresult;
+  //  $membercount = 350;
+
+
+    //calculate subscription_count
+    $subcount = ceil($membercount /$memberratio);
+
+
+//    drupal_set_message("user: ".$cid." eventid:".$eventid. " region:".$region." relationshiptypeid: ". $rel_type_id ." ratiofieldid:".$custom_field_id." memberratio:".$memberratio." membercount:".$membercount." subscription count:".$subcount);
+
+    $form["submitted"]["subscription_count"]["#default_value"]=$subcount;
+  }
+}
