@@ -47,10 +47,16 @@ function sp_regio_form_webform_client_form_alter(&$form, &$form_state, $form_id)
     $memberratio = $event["values"][$eventid]['custom_'.$custom_field_id];
 //                   $old_event_id = $old_p['values'][$id]['event_id'];
 
-
+   // watchdog("debug", "memberratio:".$memberratio." customfieldid: ".$eventstr );
 
     //get region
     $region = $form["submitted"]["civicrm_2_contact_1_fieldset_fieldset"]["civicrm_2_contact_1_contact_contact_id"]["#value"];
+  //  watchdog("debug", $region);
+
+    if (!isset($region) || !$region) {
+     $form["submitted"]["subscription_count"]["#default_value"]=0; 
+      return;
+    }
 
     //get membercount
 
@@ -84,11 +90,13 @@ function sp_regio_form_webform_client_form_alter(&$form, &$form_state, $form_id)
       'return' => array("contact_id"),
     );
     $memberresult = civicrm_api('Membership', 'get', $params);
+
     $members = array();
 
     foreach($memberresult["values"] as $member){
       $members[$member["contact_id"]]=1;
     }
+
     $params = array(
       'version' => 3,
       'sequential' => 1,
@@ -102,10 +110,11 @@ function sp_regio_form_webform_client_form_alter(&$form, &$form_state, $form_id)
     foreach($memberresult["values"] as $member){
       $members[$member["contact_id"]]=1;
     }
+
     $params = array(
       'version' => 3,
       'sequential' => 1,
-      'membership_type_id' => 8,
+      'membership_type_id' => 3,
       'status_id' => 2,
       'options' => Array("limit" => 1000000),
       'return' => array("contact_id"),
@@ -128,13 +137,18 @@ function sp_regio_form_webform_client_form_alter(&$form, &$form_state, $form_id)
     'name' => 'Afdeling',
   );
   $resultdep = civicrm_api('CustomField', 'getsingle', $params);
+
   $departmentfield = "custom_".$resultdep["id"];
 
   $params = array(
    'version' => 3,
    $departmentfield => $region,
+    'options' => Array("limit" => 1000000),
+
   );
+
   $resultcontactdep = civicrm_api('Contact', 'get', $params);
+
 
 //    drupal_set_message("members: ".count($resultcontactdep["values"]).print_r($resultcontactdep["values"],true));
 //    drupal_set_message("members: ".count($resultcontactdep["values"]).print_r($params,true).print_r($resultcontactdep,true));
@@ -143,6 +157,7 @@ function sp_regio_form_webform_client_form_alter(&$form, &$form_state, $form_id)
     foreach ($resultcontactdep["values"] as $cid => $contact){
       if (isset($members[$cid]) && $members[$cid] == 1) $membercount++;
     }
+
 
 //   drupal_set_message("member count:".$membercount);
 
