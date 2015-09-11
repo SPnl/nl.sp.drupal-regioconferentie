@@ -1,0 +1,324 @@
+<?php
+
+
+/**
+ * Implements hook_enable()
+ */
+function sp_regio_enable() {
+    db_update('system')
+    ->fields(array('weight' => 100))
+    ->condition('type', 'module')
+    ->condition('name', 'sp_regio')
+    ->execute();
+}
+
+function sp_regio_form_webform_client_form_alter(&$form, &$form_state, $form_id){
+
+  if (isset($form["submitted"]["subscription_count"])){
+//    drupal_set_message(print_r($form["submitted"]["civicrm_1_participant_1_participant_event_id"],true));
+  
+    //get logged in civi user
+    $cid = $form["submitted"]["civicrm_1_contact_1_fieldset_fieldset"]["civicrm_1_contact_1_contact_contact_id"]["#value"];
+
+    //get event
+    $eventstr = $form["submitted"]["civicrm_1_participant_1_participant_event_id"]["#value"];
+    if (!$eventstr) $eventstr = $form["submitted"]["civicrm_1_participant_1_participant_event_id"]["#webform_component"]["value"];
+    $eventid = 	explode("-",$eventstr)[0];
+ 
+
+    //get event member ratio
+    $event_ratio = 50;
+    
+    civicrm_initialize();
+    require_once 'api/api.php';
+    $params = array(
+      'version' => 3,
+      'sequential' => 1,
+      'name' => 'Verhouding_aantal_leden_aantal_inschrijvingen',
+    );
+    $result = civicrm_api('CustomField', 'get', $params);
+    $custom_field_id = $result["id"];
+
+    $params = array(
+      'version'    => 3,
+      'id' => $eventid,
+    );
+    $event = civicrm_api('Event', 'get', $params);
+    $memberratio = $event["values"][$eventid]['custom_'.$custom_field_id];
+//                   $old_event_id = $old_p['values'][$id]['event_id'];
+
+   // watchdog("debug", "memberratio:".$memberratio." customfieldid: ".$eventstr );
+
+    //get region
+    $region = $form["submitted"]["civicrm_2_contact_1_fieldset_fieldset"]["civicrm_2_contact_1_contact_contact_id"]["#value"];
+  //  watchdog("debug", $region);
+
+    if (!isset($region) || !$region) {
+     $form["submitted"]["subscription_count"]["#default_value"]=0; 
+      return;
+    }
+
+    //get membercount
+
+/*    $params = array(
+     'version' => 3,
+     'sequential' => 1,
+     'name_a_b' => 'gemeente_based_ab',
+    );
+    $result = civicrm_api('RelationshipType', 'get', $params);
+    $rel_type_id = $result["id"];   
+
+    $params = array(
+     'version' => 3,
+     'sequential' => 1,
+     'relationship_type_id' => $rel_type_id,
+     'contact_id_b'=> $region,
+    );
+    $memberresult = civicrm_api('Relationship', 'getcount', $params);
+    $membercount = $memberresult;*/
+
+/*get membership types */
+
+
+/*get all members */
+    $params = array(
+      'version' => 3,
+      'sequential' => 1,
+      'membership_type_id' => 1,
+      'status_id' => 2,
+      'options' => Array("limit" => 1000000),
+      'return' => array("contact_id"),
+    );
+    $memberresult = civicrm_api('Membership', 'get', $params);
+
+    $members = array();
+
+    foreach($memberresult["values"] as $member){
+      $members[$member["contact_id"]]=1;
+    }
+
+    $params = array(
+      'version' => 3,
+      'sequential' => 1,
+      'membership_type_id' => 2,
+      'status_id' => 2,
+      'options' => Array("limit" => 1000000),
+      'return' => array("contact_id"),
+    );
+    $memberresult = civicrm_api('Membership', 'get', $params);
+
+    foreach($memberresult["values"] as $member){
+      $members[$member["contact_id"]]=1;
+    }
+
+    $params = array(
+      'version' => 3,
+      'sequential' => 1,
+      'membership_type_id' => 3,
+      'status_id' => 2,
+      'options' => Array("limit" => 1000000),
+      'return' => array("contact_id"),
+    );
+    $memberresult = civicrm_api('Membership', 'get', $params);
+
+    foreach($memberresult["values"] as $member){
+      $members[$member["contact_id"]]=1;
+    }
+
+
+//    drupal_set_message("members: ".count($members).print_r($members,true));
+
+/*get all people in right department */
+
+  /*get department field */
+  $params = array(
+    'version' => 3,
+    'sequential' => 1,
+    'name' => 'Afdeling',
+  );
+  $resultdep = civicrm_api('CustomField', 'getsingle', $params);
+
+  $departmentfield = "custom_".$resultdep["id"];
+
+  $params = array(
+   'version' => 3,
+   $departmentfield => $region,
+    'options' => Array("limit" => 1000000),
+
+  );
+
+  $resultcontactdep = civicrm_api('Contact', 'get', $params);
+
+
+//    drupal_set_message("members: ".count($resultcontactdep["values"]).print_r($resultcontactdep["values"],true));
+//    drupal_set_message("members: ".count($resultcontactdep["values"]).print_r($params,true).print_r($resultcontactdep,true));
+
+    $membercount = 0;
+    foreach ($resultcontactdep["values"] as $cid => $contact){
+      if (isset($members[$cid]) && $members[$cid] == 1) $membercount++;
+    }
+
+
+//   drupal_set_message("member count:".$membercount);
+
+    //calculate subscription_count
+    $subcount = ceil($membercount /$memberratio);
+
+
+//    drupal_set_message("user: ".$cid." eventid:".$eventid. " region:".$region." relationshiptypeid: ". $rel_type_id ." ratiofieldid:".$custom_field_id." memberratio:".$memberratio." membercount:".$membercount." subscription count:".$subcount);
+
+    $form["submitted"]["subscription_count"]["#default_value"]=$subcount;
+  }
+}
+
+
+/**
+ * Implements hook_webform_submission_insert().
+ */
+function sp_regio_webform_submission_insert($node, $submission) {
+  if (!empty($node->webform_civicrm)) {
+    _sp_regio_webform_postsave($node, $submission);
+  }
+}
+
+/**
+ * Implements hook_webform_submission_update().
+ */
+function sp_regio_webform_submission_update($node, $submission) {
+  if (!empty($node->webform_civicrm)) {
+    _sp_regio_webform_postave($node, $submission);
+  }
+}
+
+
+function _sp_regio_webform_postsave($node, $submission){
+    civicrm_initialize();
+    $settings = $node->webform_civicrm;
+    $data = $settings['data'];
+    $enabled = wf_crm_enabled_fields($node);
+    $all_fields = wf_crm_get_fields();
+    $all_sets = wf_crm_get_fields('sets');
+    $webform = $node->webform;
+   
+    $components = isset($webform["components"])?$webform["components"]:array();
+
+//    watchdog("submission", "settings ".print_r($settings,true));
+//    drupal_set_message(print_r($node,true));
+//    drupal_set_message(print_r($components,true));
+//    drupal_set_message(print_r($submission,true));
+
+
+    // if first user excluded: remove participation
+    $includefirstuser = true;
+
+    $includefirstcomponent = -1;
+    $guestcomponent = -1;
+    $guestfieldsetid = "";
+    $contact1field = -1;
+    $eventid = -1;
+    foreach ($components as $c_id => $component) {
+       if ($component["form_key"] == "gaat_u_zelf_mee"){
+          $includefirstcomponent = $c_id;
+       }
+       if ($component["name"] == "Gast"){
+          $guestcomponent = $c_id;
+          $guestfieldsetid = $component["form_key"];
+       }
+       if ($component["form_key"] == "civicrm_1_contact_1_contact_existing"){
+           $contact1field = $c_id;
+       }
+       if ($component["form_key"] == "civicrm_1_participant_1_participant_event_id"){
+           $eventfield = $c_id;
+           $event = $component["value"];
+           list($eventid, $eventignore) = explode("-", $event);
+       }
+    
+    }
+    if ($includefirstcomponent > 0) {
+         $includefirstvalue = $submission->data[$includefirstcomponent][0];
+ 
+         if ($includefirstvalue == "2") $includefirstuser = false;
+    }
+    
+    if (!$includefirstuser)
+    {
+           //
+          /*change membership to not attending*/
+          $contact1_id = $submission->data[$contact1field][0]; 
+
+          $params = array(
+            'version' => 3,
+            'contact_id' => $contact1_id,
+            'event_id' => $eventid,
+          );
+          $resultparticipant = civicrm_api('Participant', 'get', $params);  
+//          drupal_set_message(print_r($resultparticipant,true));
+
+          if (isset($resultparticipant["id"]) && $resultparticipant["id"] > 0){
+            $params = array(
+              'version' => 3,
+              'q' => 'civicrm/ajax/rest',
+              'sequential' => 1,
+              'id' => $resultparticipant["id"],
+            );
+            $result = civicrm_api('Participant', 'delete', $params);
+          }
+    }
+
+    //if guest: change participation status
+    if ($guestcomponent > 0){
+     
+        $guestid = -1;
+        /*get guest contact id */
+        foreach ($components as $c_id => $component) {
+             if ($component["pid"] == $guestcomponent && $component["name"] == "Existing Contact"){
+                 $guestfieldid = $c_id;
+                    
+
+                 $guestid = $submission->data[$guestfieldid][0];
+                
+             }
+
+        }
+
+        /*
+          change membership to guest
+        */
+       if ($guestid > 0){
+          $params = array(
+           'version' => 3,
+           'sequential' => 1,
+           'name' => 'participant_role',
+          );
+          $resultog = civicrm_api('OptionGroup', 'getsingle', $params);
+          $params = array(
+            'version' => 3,
+            'sequential' => 1,
+            'optiongroup' => $resultog["id"],
+            'name' => 'Gast',
+           );
+           $resultguest = civicrm_api('OptionValue', 'getsingle', $params);
+           $guestvalue = $resultguest["value"];
+
+           if ($guestvalue){
+             $params = array(
+              'version' => 3,
+              'contact_id' => $guestid,
+              'event_id' => $eventid,
+             );
+             $resultguest = civicrm_api('Participant', 'get', $params);  
+             if (isset($resultguest["id"]) && $resultguest["id"] > 0){
+                 $params = array(
+                    'version' => 3,
+                    'id' => $resultguest["id"],
+                    'participant_role_id' => array($guestvalue),
+                 );
+                 $resultguestchange = civicrm_api('Participant', 'create', $params);  
+             }
+
+           }
+
+       } 
+    }
+}
+

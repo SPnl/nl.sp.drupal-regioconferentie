@@ -1,0 +1,7 @@
+name = SP-Regio
+description = Aanpassingen voor Regionconferentieinschrijvingen
+version = 1.0
+core = 7.x
+package = sprbs
+
+//stylesheets[all][] = afd.css
