@@ -1,0 +1,7 @@
+name = SP-Regio (OUD)
+description = Aanpassingen voor Regioconferentieinschrijving
+version = 1.0
+core = 7.x
+package = sprbs
+
+//stylesheets[all][] = afd.css
