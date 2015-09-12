@@ -31,12 +31,6 @@ $handler->display->display_options['header']['area']['empty'] = TRUE;
 $handler->display->display_options['header']['area']['content'] = '<p><a href="/regioconferenties/add/%1">Deelnemer toevoegen</a></p>';
 $handler->display->display_options['header']['area']['format'] = 'filtered_html';
 $handler->display->display_options['header']['area']['tokenize'] = TRUE;
-/* Kop: Entity: Rendered entity */
-$handler->display->display_options['header']['entity']['id'] = 'entity';
-$handler->display->display_options['header']['entity']['table'] = 'entity__global';
-$handler->display->display_options['header']['entity']['field'] = 'entity';
-$handler->display->display_options['header']['entity']['entity_id'] = 'regioconferenties/add/1';
-$handler->display->display_options['header']['entity']['bypass_access'] = 0;
 /* No results behavior: Global: Text area */
 $handler->display->display_options['empty']['area']['id'] = 'area';
 $handler->display->display_options['empty']['area']['table'] = 'views';
@@ -115,6 +109,22 @@ $handler->display->display_options['arguments']['id']['default_argument_type'] =
 $handler->display->display_options['arguments']['id']['summary']['number_of_records'] = '0';
 $handler->display->display_options['arguments']['id']['summary']['format'] = 'default_summary';
 $handler->display->display_options['arguments']['id']['summary_options']['items_per_page'] = '25';
+/* Filter criterion: CiviCRM Events: Event Type */
+$handler->display->display_options['filters']['event_type']['id'] = 'event_type';
+$handler->display->display_options['filters']['event_type']['table'] = 'civicrm_event';
+$handler->display->display_options['filters']['event_type']['field'] = 'event_type';
+$handler->display->display_options['filters']['event_type']['relationship'] = 'event_id';
+$handler->display->display_options['filters']['event_type']['value'] = array(
+  8 => '8',
+);
+/* Filter criterion: CiviCRM Events: Start Date */
+$handler->display->display_options['filters']['start_date']['id'] = 'start_date';
+$handler->display->display_options['filters']['start_date']['table'] = 'civicrm_event';
+$handler->display->display_options['filters']['start_date']['field'] = 'start_date';
+$handler->display->display_options['filters']['start_date']['relationship'] = 'event_id';
+$handler->display->display_options['filters']['start_date']['operator'] = '>=';
+$handler->display->display_options['filters']['start_date']['value']['value'] = 'now';
+$handler->display->display_options['filters']['start_date']['value']['type'] = 'offset';
 
 /* Display: Page */
 $handler = $view->new_display('page', 'Page', 'page');

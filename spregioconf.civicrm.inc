@@ -88,6 +88,8 @@ class SPRegioconf_Civi {
 
   /**
    * Controleert of een gebruiker kan inschrijven voor een specifiek evenement.
+   * Op dit moment worden hier ook events uitgesloten die niet specifiek regio's hebben gedefinieerd
+   * -> voorlopig security-dingetje om te voorkomen dat andere evenementen ook open kunnen komen te staan.
    * @param int $drupal_uid Drupal UID
    * @param int $event_id Event ID
    * @return bool Has access
@@ -97,7 +99,7 @@ class SPRegioconf_Civi {
     $userRegio = $this->getUserRegio($drupal_uid);
     $eventRegios = $this->getEventValue($event_id, 'regions');
 
-    return (count($eventRegios) == 0 || in_array($userRegio, $eventRegios));
+    return (count($eventRegios) > 0 && in_array($userRegio, $eventRegios));
   }
 
   /**

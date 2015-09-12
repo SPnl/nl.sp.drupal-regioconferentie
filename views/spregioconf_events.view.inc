@@ -1,5 +1,4 @@
 <?php
-
 $view = new view();
 $view->name = 'spregioconf_events';
 $view->description = '';
@@ -16,10 +15,11 @@ $handler->display->display_options['title'] = 'Aanmelden afgevaardigden';
 $handler->display->display_options['css_class'] = 'content';
 $handler->display->display_options['use_more_always'] = FALSE;
 $handler->display->display_options['access']['type'] = 'role';
-$handler->display->display_options['access']['role'] = [
+$handler->display->display_options['access']['role'] = array(
   3 => '3',
+  18 => '18',
   7 => '7',
-];
+);
 $handler->display->display_options['cache']['type'] = 'none';
 $handler->display->display_options['query']['type'] = 'views_query';
 $handler->display->display_options['exposed_form']['type'] = 'basic';
@@ -75,9 +75,9 @@ $handler->display->display_options['sorts']['start_date']['field'] = 'start_date
 $handler->display->display_options['filters']['event_type']['id'] = 'event_type';
 $handler->display->display_options['filters']['event_type']['table'] = 'civicrm_event';
 $handler->display->display_options['filters']['event_type']['field'] = 'event_type';
-$handler->display->display_options['filters']['event_type']['value'] = [
+$handler->display->display_options['filters']['event_type']['value'] = array(
   8 => '8',
-];
+);
 /* Filter criterion: CiviCRM Events: Start Date */
 $handler->display->display_options['filters']['start_date']['id'] = 'start_date';
 $handler->display->display_options['filters']['start_date']['table'] = 'civicrm_event';
@@ -89,7 +89,7 @@ $handler->display->display_options['filters']['start_date']['value']['type'] = '
 /* Display: Page */
 $handler = $view->new_display('page', 'Page', 'page');
 $handler->display->display_options['path'] = 'regioconferenties';
-$translatables['spregioconf_events'] = [
+$translatables['spregioconf_events'] = array(
   t('Master'),
   t('Aanmelden afgevaardigden'),
   t('more'),
@@ -110,4 +110,4 @@ Selecteer een conferentie om verder te gaan.</p>'),
   t('Acties'),
   t('Deelnemersoverzicht'),
   t('Page'),
-];
+);
