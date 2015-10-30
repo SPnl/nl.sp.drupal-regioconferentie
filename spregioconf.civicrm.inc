@@ -249,9 +249,13 @@ class SPRegioconf_Civi {
       $afdeling_id = $contact[$afdelingField];
       $regio_id    = $contact[$regioField];
 
+      if(!$contact || !$afdeling_id) {
+        throw new \Exception('De ingelogde gebruiker heeft geen CiviCRM-contact of behoort niet tot een afdeling.');
+      }
+
       $event = $this->getEventData($event_id);
       if (!$event) {
-        return FALSE;
+        throw new \Exception('Kon informatie voor dit evenement niet ophalen.');
       }
 
       $ratio              = $this->getEventValue($event_id, 'ratio');
@@ -273,8 +277,11 @@ class SPRegioconf_Civi {
 
     } catch (\CiviCRM_API3_Exception $e) {
       drupal_set_message('Kon afdelingsgegevens niet ophalen: ' . $e->getMessage(), 'error');
-      return FALSE;
+    } catch(\Exception $e) {
+      drupal_set_message($e->getMessage(), 'error');
     }
+
+    return FALSE;
   }
 
   /**
