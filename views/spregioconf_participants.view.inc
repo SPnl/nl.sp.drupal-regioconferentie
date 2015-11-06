@@ -51,6 +51,11 @@ $handler->display->display_options['relationships']['event_id']['table'] = 'civi
 $handler->display->display_options['relationships']['event_id']['field'] = 'event_id';
 $handler->display->display_options['relationships']['event_id']['label'] = 'Participant';
 $handler->display->display_options['relationships']['event_id']['required'] = TRUE;
+/* Relationship: CiviCRM Participants: Participant's Contact ID */
+$handler->display->display_options['relationships']['contact_id']['id'] = 'contact_id';
+$handler->display->display_options['relationships']['contact_id']['table'] = 'civicrm_participant';
+$handler->display->display_options['relationships']['contact_id']['field'] = 'contact_id';
+$handler->display->display_options['relationships']['contact_id']['required'] = TRUE;
 /* Veld: CiviCRM Contacts: Contact ID */
 $handler->display->display_options['fields']['id']['id'] = 'id';
 $handler->display->display_options['fields']['id']['table'] = 'civicrm_contact';
@@ -71,6 +76,12 @@ $handler->display->display_options['fields']['display_name']['table'] = 'civicrm
 $handler->display->display_options['fields']['display_name']['field'] = 'display_name';
 $handler->display->display_options['fields']['display_name']['label'] = 'Naam';
 $handler->display->display_options['fields']['display_name']['link_to_civicrm_contact'] = 0;
+/* Veld: CiviCRM Custom: Geostelsel: Afdeling */
+$handler->display->display_options['fields']['afdeling']['id'] = 'afdeling';
+$handler->display->display_options['fields']['afdeling']['table'] = 'civicrm_value_geostelsel';
+$handler->display->display_options['fields']['afdeling']['field'] = 'afdeling';
+$handler->display->display_options['fields']['afdeling']['relationship'] = 'contact_id';
+$handler->display->display_options['fields']['afdeling']['label'] = 'Afdeling';
 /* Veld: CiviCRM Participants: Participant Role */
 $handler->display->display_options['fields']['role']['id'] = 'role';
 $handler->display->display_options['fields']['role']['table'] = 'civicrm_participant';
@@ -115,6 +126,22 @@ $handler->display->display_options['arguments']['id']['default_argument_type'] =
 $handler->display->display_options['arguments']['id']['summary']['number_of_records'] = '0';
 $handler->display->display_options['arguments']['id']['summary']['format'] = 'default_summary';
 $handler->display->display_options['arguments']['id']['summary_options']['items_per_page'] = '25';
+/* Filter criterion: CiviCRM Events: Event Type */
+$handler->display->display_options['filters']['event_type']['id'] = 'event_type';
+$handler->display->display_options['filters']['event_type']['table'] = 'civicrm_event';
+$handler->display->display_options['filters']['event_type']['field'] = 'event_type';
+$handler->display->display_options['filters']['event_type']['relationship'] = 'event_id';
+$handler->display->display_options['filters']['event_type']['value'] = array(
+  8 => '8',
+);
+/* Filter criterion: CiviCRM Events: Start Date */
+$handler->display->display_options['filters']['start_date']['id'] = 'start_date';
+$handler->display->display_options['filters']['start_date']['table'] = 'civicrm_event';
+$handler->display->display_options['filters']['start_date']['field'] = 'start_date';
+$handler->display->display_options['filters']['start_date']['relationship'] = 'event_id';
+$handler->display->display_options['filters']['start_date']['operator'] = '>=';
+$handler->display->display_options['filters']['start_date']['value']['value'] = 'now';
+$handler->display->display_options['filters']['start_date']['value']['type'] = 'offset';
 
 /* Display: Page */
 $handler = $view->new_display('page', 'Page', 'page');
