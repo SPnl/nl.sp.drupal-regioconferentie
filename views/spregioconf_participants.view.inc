@@ -31,12 +31,6 @@ $handler->display->display_options['header']['area']['empty'] = TRUE;
 $handler->display->display_options['header']['area']['content'] = '<p><a href="/regioconferenties/add/%1">Deelnemer toevoegen</a></p>';
 $handler->display->display_options['header']['area']['format'] = 'filtered_html';
 $handler->display->display_options['header']['area']['tokenize'] = TRUE;
-/* Kop: Entity: Rendered entity */
-$handler->display->display_options['header']['entity']['id'] = 'entity';
-$handler->display->display_options['header']['entity']['table'] = 'entity__global';
-$handler->display->display_options['header']['entity']['field'] = 'entity';
-$handler->display->display_options['header']['entity']['entity_id'] = 'regioconferenties/add/1';
-$handler->display->display_options['header']['entity']['bypass_access'] = 0;
 /* No results behavior: Global: Text area */
 $handler->display->display_options['empty']['area']['id'] = 'area';
 $handler->display->display_options['empty']['area']['table'] = 'views';

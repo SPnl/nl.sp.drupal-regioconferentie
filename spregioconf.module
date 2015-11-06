@@ -88,7 +88,7 @@ function spregioconf_alter_data_participants(&$view) {
   $data = $civi->getExtendedEventData($user->uid, $event_id);
 
   $custom_uitleg = spregioconf_get_infotext($data);
-  $header_item = $view->get_item('default', 'header', 'area');
+  $header_item   = $view->get_item('default', 'header', 'area');
   $view->set_item_option('default', 'header', 'area', 'content', $custom_uitleg . $header_item['content']);
 
   if (count($view->result) > 0) {
@@ -107,7 +107,7 @@ function spregioconf_alter_data_participants(&$view) {
  */
 function spregioconf_views_access_callbacks() {
   $callbacks['spregioconf_check_overview_access'] = t('Regioconferenties: mag overzicht bekijken');
-  $callbacks['spregioconf_check_event_access'] = t('Regioconferenties: mag inschrijven');
+  $callbacks['spregioconf_check_event_access']    = t('Regioconferenties: mag inschrijven');
   return $callbacks;
 }
 
@@ -116,8 +116,8 @@ function spregioconf_views_access_callbacks() {
  * Voegt formulieren toe om deelnemers toe te voegen / te verwijderen.
  */
 function spregioconf_menu() {
-  $items = [];
-  $items['regioconferenties/add/%'] = [
+  $items                                   = [];
+  $items['regioconferenties/add/%']        = [
     'title'            => 'Deelnemer toevoegen',
     'type'             => MENU_NORMAL_ITEM,
     'page callback'    => 'drupal_get_form',
@@ -125,7 +125,7 @@ function spregioconf_menu() {
     'access callback'  => 'spregioconf_check_event_access',
     'access arguments' => [2],
   ];
-  $items['regioconferenties/delete/%'] = [
+  $items['regioconferenties/delete/%']     = [
     'title'           => 'Deelnemer verwijderen',
     'type'            => MENU_NORMAL_ITEM,
     'page callback'   => 'spregioconf_participant_delete',
@@ -154,13 +154,13 @@ function spregioconf_participant_add($form, &$form_state, $event_id) {
   $spcivi = SPRegioconf_Civi::getInstance();
 
   // Sla de eventdata inclusief maximum-aantal e.d. op in de form state
-  $data = $spcivi->getExtendedEventData($user->uid, $event_id);
+  $data                     = $spcivi->getExtendedEventData($user->uid, $event_id);
   $form_state['event_data'] = &$data;
 
   // Haal rollen op die gebruikt mogen worden, en toon de huidige/maximum aantallen
   $form_state['event_roles'] = CRM_Event_PseudoConstant::participantRole();
-  $allowedRoles = [];
-  $roleDescription = '(Je hebt tot nu toe ' . $data['currentRegistrations'] . ' ' . ($data['maxRegistrations'] ? ' van ' . $data['maxRegistrations'] : '') . ' deelnemers ' . ($data['maxGuests'] > 0 ? ' en ' . $data['currentGuests'] . ' van ' . $data['maxGuests'] . ' gasten ' : '') . ' aangemeld)';
+  $allowedRoles              = [];
+  $roleDescription           = '(Je hebt tot nu toe ' . $data['currentRegistrations'] . ' ' . ($data['maxRegistrations'] ? ' van ' . $data['maxRegistrations'] : '') . ' deelnemers ' . ($data['maxGuests'] > 0 ? ' en ' . $data['currentGuests'] . ' van ' . $data['maxGuests'] . ' gasten ' : '') . ' aangemeld)';
   if ($data['maxRegistrations'] == 0 || $data['currentRegistrations'] < $data['maxRegistrations']) {
     $allowedRoles[array_search('Deelnemer', $form_state['event_roles'])] = 'Deelnemer';
   }
@@ -173,7 +173,7 @@ function spregioconf_participant_add($form, &$form_state, $event_id) {
     drupal_goto('regioconferenties/view/' . $data['id']);
   }
 
-  if($data['registrationUntil'] <= time()) {
+  if ($data['registrationUntil'] <= time()) {
     drupal_set_message('Het is niet meer mogelijk mensen voor dit evenement aan te melden.', 'warning');
     drupal_goto('regioconferenties/view/' . $data['id']);
   }
@@ -213,7 +213,7 @@ function spregioconf_participant_add($form, &$form_state, $event_id) {
   $form['#suffix'] = '</div>';
 
   $form['#validate'][] = 'spregioconf_participant_add_validate';
-  $form['#submit'][] = 'spregioconf_participant_add_Submit';
+  $form['#submit'][]   = 'spregioconf_participant_add_Submit';
 
   return $form;
 }
@@ -232,7 +232,7 @@ function spregioconf_participant_add_validate($form, &$form_state) {
     form_set_error('spregioconf_contact_id', 'Je hebt geen toegang tot dit evenement.');
   }
 
-  if($form_state['event_data']['registrationUntil'] <= time()) {
+  if ($form_state['event_data']['registrationUntil'] <= time()) {
     form_set_error('spregioconf_contact_id', 'Het is niet meer mogelijk mensen aan te melden voor dit evenement.');
   }
 
@@ -265,7 +265,11 @@ function spregioconf_participant_add_validate($form, &$form_state) {
 function spregioconf_participant_add_submit($form, &$form_state) {
 
   $spcivi = SPRegioconf_Civi::getInstance();
-  if ($spcivi->addParticipant($form_state['event_data']['id'], $form_state['values']['spregioconf_contact_id'], $form_state['values']['spregioconf_role'])) {
+
+  if (!$spcivi->checkContactAccess($form_state['values']['spregioconf_contact_id'])) {
+    drupal_set_message('Kon deelnemer niet aanmelden: je hebt geen toegang tot het lid met het opgegeven lidnummer.', 'error');
+  }
+  elseif ($spcivi->addParticipant($form_state['event_data']['id'], $form_state['values']['spregioconf_contact_id'], $form_state['values']['spregioconf_role'])) {
     drupal_set_message('Deelnemer aangemeld.');
     drupal_goto('regioconferenties/view/' . $form_state['event_data']['id']);
   }
@@ -282,19 +286,17 @@ function spregioconf_participant_add_submit($form, &$form_state) {
 function spregioconf_participant_delete($participant_id) {
 
   global $user;
-  $civi = SPRegioconf_Civi::getInstance();
+  $civi        = SPRegioconf_Civi::getInstance();
   $participant = $civi->getParticipantData($participant_id);
 
-  if ($participant && $civi->checkEventAccess($user->uid, $participant['event_id'])) {
+  if ($participant && $civi->checkEventAccess($user->uid, $participant['event_id']) && $civi->checkContactAccess($participant['contact_id'])) {
 
     $civi->cancelParticipant($participant_id);
 
     drupal_set_message('Deelnemer afgemeld.');
     drupal_goto('regioconferenties/view/' . $participant['event_id']);
-
   }
   else {
-
     return drupal_access_denied();
   }
 }

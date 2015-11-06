@@ -18,6 +18,5 @@ Bij een evenement kan in de backend opgegeven worden:
 De hiervoor benodigde velden zijn opgenomen in de nl.sp.generic extensie.
 
 Voor de toekomst:
-- toegang tot evenement zelf implementeren in eigen access plugin (ipv via views callback en data filter op overzicht)
-- en idem voor deelnemers in eigen filter-plugin
-- data over afdeling wellicht toch ophalen obv relaties ipv eigen geostelsel-info (al hebben ACLs ook duidelijke voordelen, zoals niet beperkt zijn tot bepaalde relaties/rollen om het formulier te kunnen gebruiken)
+- toegang tot evenement zelf implementeren in eigen access-plugin voor Views (ipv via views callback en data filter op overzicht)
+- en idem voor deelnemers in eigen filter-plugin voor Views
