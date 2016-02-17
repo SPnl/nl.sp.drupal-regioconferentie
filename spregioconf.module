@@ -84,8 +84,8 @@ function spregioconf_alter_data_participants(&$view) {
   global $user;
   $event_id = $view->args[0];
 
-  $civi = SPRegioconf_Civi::getInstance();
-  $data = $civi->getExtendedEventData($user->uid, $event_id);
+  $spcivi = \SPRegioconf_Civi::getInstance();
+  $data = $spcivi->getExtendedEventData($user->uid, $event_id);
 
   $custom_uitleg = spregioconf_get_infotext($data);
   $header_item   = $view->get_item('default', 'header', 'area');
@@ -93,7 +93,7 @@ function spregioconf_alter_data_participants(&$view) {
 
   if (count($view->result) > 0) {
     foreach ($view->result as $k => &$r) {
-      if (!$civi->checkContactAccess($r->civicrm_contact_id)) {
+      if (!$spcivi->checkContactAccess($r->civicrm_contact_id)) {
         unset($view->result[$k]);
       }
     }
@@ -151,7 +151,7 @@ function spregioconf_menu() {
 function spregioconf_participant_add($form, &$form_state, $event_id) {
 
   global $user;
-  $spcivi = SPRegioconf_Civi::getInstance();
+  $spcivi = \SPRegioconf_Civi::getInstance();
 
   // Sla de eventdata inclusief maximum-aantal e.d. op in de form state
   $data                     = $spcivi->getExtendedEventData($user->uid, $event_id);
@@ -226,7 +226,7 @@ function spregioconf_participant_add($form, &$form_state, $event_id) {
 function spregioconf_participant_add_validate($form, &$form_state) {
 
   global $user;
-  $spcivi = SPRegioconf_Civi::getInstance();
+  $spcivi = \SPRegioconf_Civi::getInstance();
 
   if (!$spcivi->checkEventAccess($user->uid, $form_state['event_data']['id'])) {
     form_set_error('spregioconf_contact_id', 'Je hebt geen toegang tot dit evenement.');
@@ -264,7 +264,7 @@ function spregioconf_participant_add_validate($form, &$form_state) {
  */
 function spregioconf_participant_add_submit($form, &$form_state) {
 
-  $spcivi = SPRegioconf_Civi::getInstance();
+  $spcivi = \SPRegioconf_Civi::getInstance();
 
   if (!$spcivi->checkContactAccess($form_state['values']['spregioconf_contact_id'])) {
     drupal_set_message('Kon deelnemer niet aanmelden: je hebt geen toegang tot het lid met het opgegeven lidnummer.', 'error');
@@ -286,12 +286,12 @@ function spregioconf_participant_add_submit($form, &$form_state) {
 function spregioconf_participant_delete($participant_id) {
 
   global $user;
-  $civi        = SPRegioconf_Civi::getInstance();
-  $participant = $civi->getParticipantData($participant_id);
+  $spcivi        = \SPRegioconf_Civi::getInstance();
+  $participant = $spcivi->getParticipantData($participant_id);
 
-  if ($participant && $civi->checkEventAccess($user->uid, $participant['event_id']) && $civi->checkContactAccess($participant['contact_id'])) {
+  if ($participant && $spcivi->checkEventAccess($user->uid, $participant['event_id']) && $spcivi->checkContactAccess($participant['contact_id'])) {
 
-    $civi->cancelParticipant($participant_id);
+    $spcivi->cancelParticipant($participant_id);
 
     drupal_set_message('Deelnemer afgemeld.');
     drupal_goto('regioconferenties/view/' . $participant['event_id']);
@@ -307,8 +307,8 @@ function spregioconf_participant_delete($participant_id) {
  */
 function spregioconf_participant_autocomplete($string = "") {
 
-  $civi = SPRegioconf_Civi::getInstance();
-  drupal_json_output($civi->getContactAutocompleteData($string));
+  $spcivi = \SPRegioconf_Civi::getInstance();
+  drupal_json_output($spcivi->getContactAutocompleteData($string));
 }
 
 /**
@@ -332,8 +332,8 @@ function spregioconf_check_event_access($event_id) {
   }
 
   global $user;
-  $civi = SPRegioconf_Civi::getInstance();
-  return $civi->checkEventAccess($user->uid, $event_id);
+  $spcivi = \SPRegioconf_Civi::getInstance();
+  return $spcivi->checkEventAccess($user->uid, $event_id);
 }
 
 /**

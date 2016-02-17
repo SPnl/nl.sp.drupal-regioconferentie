@@ -2,11 +2,9 @@
 
 /**
  * Class SPRegioconf_Civi
- * Functies voor CiviCRM-integratie.
+ * Functies voor CiviCRM-integratie regioconferentie-aanmelding. Zie \SPCivi voor initialisatie en basisfuncties.
  */
-class SPRegioconf_Civi {
-
-  private static $instance;
+class SPRegioconf_Civi extends \SPCivi {
 
   // Mapping van veldnamen naar interne namen. Deze zijn een beetje historisch...
   private $customEventGroup = 'regioconf_options';
@@ -19,26 +17,7 @@ class SPRegioconf_Civi {
 
   // Cachen van events en custom groups/fields binnen request
   private $eventDataCache = [];
-  private $customGroupCache = [];
-  private $customFieldsCache = [];
   private $geoInfoCache = [];
-
-  /**
-   * Get instance
-   * @return bool|\SPRegioconf_Civi Instance
-   */
-  public static function getInstance() {
-    if (!self::$instance) {
-      self::$instance = new self;
-    }
-
-    if (!civicrm_initialize()) {
-      self::$instance->log('Could not initialize CiviCRM.', TRUE);
-      return FALSE;
-    }
-
-    return self::$instance;
-  }
 
   /**
    * Get a single field value from the CiviCRM event data. Supports mapped names for custom fields
@@ -75,7 +54,7 @@ class SPRegioconf_Civi {
 
     if (empty($this->eventDataCache[$event_id])) {
       try {
-        $this->eventDataCache[$event_id] = civicrm_api3('Event', 'getsingle', [
+        $this->eventDataCache[$event_id] = $this->api('Event', 'getsingle', [
           'id' => $event_id,
         ]);
       } catch (\CiviCRM_API3_Exception $e) {
@@ -119,7 +98,7 @@ class SPRegioconf_Civi {
    */
   public function getParticipantData($participant_id) {
     try {
-      return civicrm_api3('Participant', 'getsingle', [
+      return $this->api('Participant', 'getsingle', [
         'id' => $participant_id,
       ]);
     } catch (\CiviCRM_API3_Exception $e) {
@@ -139,12 +118,12 @@ class SPRegioconf_Civi {
    */
   public function addParticipant($event_id, $contact_id, $role_id) {
     try {
-      return civicrm_api3('Participant', 'create', [
+      return $this->api('Participant', 'create', [
         'event_id'       => $event_id,
         'contact_id'     => $contact_id,
         'role_id'        => $role_id,
         'participant_id' => $this->getParticipant($event_id, $contact_id, $role_id),
-        'status_id'      => civicrm_api3('ParticipantStatusType', 'getvalue', ['name' => 'Registered', 'return' => 'id']),
+        'status_id'      => $this->api('ParticipantStatusType', 'getvalue', ['name' => 'Registered', 'return' => 'id']),
       ]);
     } catch (\CiviCRM_API3_Exception $e) {
       drupal_set_message('Kon deelnemer niet aanmelden: ' . $e->getMessage(), 'error');
@@ -161,7 +140,7 @@ class SPRegioconf_Civi {
    */
   public function getParticipant($event_id, $contact_id, $role_id) {
     try {
-      $participant = civicrm_api3('Participant', 'getsingle', ['event_id' => $event_id, 'contact_id' => $contact_id, 'role_id' => $role_id]);
+      $participant = $this->api('Participant', 'getsingle', ['event_id' => $event_id, 'contact_id' => $contact_id, 'role_id' => $role_id]);
       return $participant['participant_id'];
     } catch (\CiviCRM_API3_Exception $e) {
       return FALSE;
@@ -194,8 +173,8 @@ class SPRegioconf_Civi {
    */
   public function cancelParticipant($participant_id) {
     try {
-      $cancel_id = civicrm_api3('ParticipantStatusType', 'getvalue', ['name' => 'Cancelled', 'return' => 'id']);
-      return civicrm_api3('Participant', 'create', [
+      $cancel_id = $this->api('ParticipantStatusType', 'getvalue', ['name' => 'Cancelled', 'return' => 'id']);
+      return $this->api('Participant', 'create', [
         'participant_id' => $participant_id,
         'status_id'      => $cancel_id,
       ]);
@@ -205,37 +184,6 @@ class SPRegioconf_Civi {
     }
   }
 
-  /**
-   * Autocomplete data voor inschrijfformulier (afkomstig van spkaderfunctiesafdeling, misschien veralgemeniseren)
-   * @param string $string Search string
-   * @return string JSON output
-   */
-  public function getContactAutoCompleteData($string = '') {
-
-    $session = CRM_Core_Session::singleton();
-    list($aclFrom, $aclWhere) = CRM_Contact_BAO_Contact_Permission::cacheClause('contact_a');
-
-    $params = [];
-    $sql    = "SELECT contact_a.id, contact_a.display_name
-          FROM civicrm_contact contact_a
-          {$aclFrom}
-          WHERE contact_a.contact_type = 'Individual' AND contact_a.is_deleted = 0 AND contact_a.is_deceased = 0 AND {$aclWhere}
-          ";
-    if (!empty($string)) {
-      $sql .= " AND (contact_a.display_name LIKE %1 OR contact_a.sort_name LIKE %1 OR CONVERT(contact_a.id, CHAR) LIKE %1)";
-      $params[1] = ['%' . $string . '%', 'String'];
-    }
-    $sql .= " ORDER BY contact_a.sort_name LIMIT 0,10";
-    $return = [];
-    $dao    = CRM_Core_DAO::executeQuery($sql, $params);
-    while ($dao->fetch()) {
-      $name             = $dao->display_name . " (lidnr: " . $dao->id . ")";
-      $return[$dao->id] = $name;
-    }
-
-    return $return;
-  }
-
   public function getExtendedEventData($drupal_uid, $event_id) {
 
     try {
@@ -243,8 +191,8 @@ class SPRegioconf_Civi {
       $afdelingField = 'custom_' . $this->getCustomFieldId('Geostelsel', 'Afdeling');
       $regioField    = 'custom_' . $this->getCustomFieldId('Geostelsel', 'Regio');
 
-      $contact_id = civicrm_api3('UFMatch', 'getvalue', ['uf_id' => $drupal_uid, 'return' => 'contact_id']);
-      $contact    = civicrm_api3('Contact', 'getsingle', ['contact_id' => $contact_id, 'return' => [$afdelingField, $regioField]]);
+      $contact_id = $this->api('UFMatch', 'getvalue', ['uf_id' => $drupal_uid, 'return' => 'contact_id']);
+      $contact    = $this->api('Contact', 'getsingle', ['contact_id' => $contact_id, 'return' => [$afdelingField, $regioField]]);
 
       $afdeling_id = $contact[$afdelingField];
       $regio_id    = $contact[$regioField];
@@ -339,12 +287,12 @@ class SPRegioconf_Civi {
 
     try {
 
-      $contact_id = civicrm_api3('UFMatch', 'getvalue', ['uf_id' => $drupal_uid, 'return' => 'contact_id']);
+      $contact_id = $this->api('UFMatch', 'getvalue', ['uf_id' => $drupal_uid, 'return' => 'contact_id']);
 
       // Eerste poging: op basis van voorzittersrelatie met afdeling
       $vzRelatieId  = $this->getRelationshipTypeIdByNameAB('sprel_voorzitter_afdeling');
       $vvzRelatieId = $this->getRelationshipTypeIdByNameAB('sprel_vervangendvoorzitter_afdeling');
-      $afdelingsId  = civicrm_api3('Relationship', 'getvalue', [
+      $afdelingsId  = $this->api('Relationship', 'getvalue', [
         'return'               => 'contact_id_b',
         'relationship_type_id' => ['IN' => [$vzRelatieId, $vvzRelatieId]],
         'contact_id_a'         => $contact_id,
@@ -358,7 +306,7 @@ class SPRegioconf_Civi {
       else {
         // Fallback: op basis van veld Geostelsel->Afdeling
         $afdelingField                  = $this->getCustomFieldId('Geostelsel', 'Afdeling');
-        $this->geoInfoCache['afdeling'] = civicrm_api3('Contact', 'getvalue', ['contact_id' => $contact_id, 'return' => 'custom_' . $afdelingField]);
+        $this->geoInfoCache['afdeling'] = $this->api('Contact', 'getvalue', ['contact_id' => $contact_id, 'return' => 'custom_' . $afdelingField]);
       }
 
       return $this->geoInfoCache['afdeling'];
@@ -393,7 +341,7 @@ class SPRegioconf_Civi {
   private function getRegioIdByAfdelingId($afd_contact_id) {
     try {
       $rel_type_id = $this->getRelationshipTypeIdByNameAB('sprel_afdeling_regio');
-      return civicrm_api3('Relationship', 'getvalue', [
+      return $this->api('Relationship', 'getvalue', [
         'return'               => 'contact_id_b',
         'relationship_type_id' => $rel_type_id,
         'contact_id_a'         => $afd_contact_id,
@@ -403,62 +351,6 @@ class SPRegioconf_Civi {
       drupal_set_message('Kon regio niet ophalen: ' . $e->getMessage(), 'error');
       return FALSE;
     }
-  }
-
-  /**
-   * Haal een relationship type id op basis van een naam op
-   * @param string $name_a_b Name_A_B
-   * @return int|bool Relationship Type ID or false
-   */
-  private function getRelationshipTypeIdByNameAB($name_a_b) {
-    try {
-      $result = civicrm_api3('RelationshipType', 'getsingle', array('name_a_b' => $name_a_b));
-      return $result['id'];
-    } catch (\CiviCRM_API3_Exception $e) {
-      return FALSE;
-    }
-  }
-
-  /**
-   * Find a custom field ID by name
-   * @param string $groupName CustomGroup name
-   * @param string $fieldName CustomField name
-   * @return int CustomField id
-   * @throws \CiviCRM_API3_Exception Exception
-   */
-  private function getCustomFieldId($groupName, $fieldName) {
-
-    $cacheKey = $groupName . '_' . $fieldName;
-    if (array_key_exists($cacheKey, $this->customFieldsCache)) {
-      return $this->customFieldsCache[$cacheKey];
-    }
-
-    $groupId = $this->getCustomGroupId($groupName);
-    $fieldId = civicrm_api3('CustomField', 'getvalue', [
-      'group_id' => $groupId,
-      'name'     => $fieldName,
-      'return'   => 'id',
-    ]);
-
-    $this->customFieldsCache[$cacheKey] = $fieldId;
-    return $fieldId;
-  }
-
-  /**
-   * Find a custom group ID by name
-   * @param string $groupName CustomGroup name
-   * @return int CustomGroup id
-   * @throws \CiviCRM_API3_Exception Exception
-   */
-  private function getCustomGroupId($groupName) {
-
-    if (array_key_exists($groupName, $this->customGroupCache)) {
-      return $this->customGroupCache[$groupName];
-    };
-
-    $groupId                            = civicrm_api3('CustomGroup', 'getvalue', ['name' => $groupName, 'return' => 'id']);
-    $this->customGroupCache[$groupName] = $groupId;
-    return $groupId;
   }
 
 }
