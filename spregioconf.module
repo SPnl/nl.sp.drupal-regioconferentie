@@ -327,7 +327,7 @@ function spregioconf_check_overview_access() {
  */
 function spregioconf_check_event_access($event_id) {
 
-  if (user_access('administer CiviCRM')) {
+  if (user_access('administer CiviCRM') || user_access('edit all events')) {
     return TRUE;
   }
 
