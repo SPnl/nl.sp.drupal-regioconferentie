@@ -1,5 +1,5 @@
 {
-  "name": "spnl/nl.sp.drupal-aanmelden",
+  "name": "spnl/nl.sp.drupal-regioconferentie",
   "description": "Aanmeldformulieren om SP-lid of abonnee te worden op SP.nl.",
   "type": "drupal-custom-module",
   "authors": [
